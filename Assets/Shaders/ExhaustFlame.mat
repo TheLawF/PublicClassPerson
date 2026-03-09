@@ -68,20 +68,21 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _Height: 1.28
+    - _Height: 1
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _Size: 1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _Width: 1.42
+    - _Width: 1.001
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _InnerFlame: {r: 0, g: 0, b: 0, a: 1}
-    - _OuterFlame: {r: 1, g: 1, b: 1, a: 1}
+    - _InnerFlame: {r: 1.9999998, g: 0, b: 1.9557102, a: 1}
+    - _OuterFlame: {r: 0, g: 0.18736601, b: 2, a: 1}
   m_BuildTextureStacks: []
