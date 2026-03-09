@@ -4,9 +4,12 @@
 	{
 		[HDR] _OuterFlame ("外焰颜色", color) = (1,0,0,1)
 		[HDR] _InnerFlame ("内焰颜色", color) = (0,1,1,1)
-		_Width ("内焰宽度", Range(1.001, 2)) = 1.1
-		_Height ("内焰高度", Range(0.001, 1)) = 1
-		_Size ("外焰长度", Range(0.001, 1)) = 1
+		_InnerWidth ("内焰宽度", Range(0, 2)) = 0.5
+		_InnerLength ("内焰长度", Range(0, 1)) = 0.5
+		_OuterWidth ("外焰宽度", Range(2, 4)) = 2
+		_OuterLength ("外焰长度", Range(0, 1)) = 1
+		
+		_TotalLength ("总长度", Range(0, 1)) = 1
 	}
 	SubShader
 	{
@@ -45,27 +48,29 @@
 			float4 _MainTex_ST;
 			fixed4 _OuterFlame;
 			fixed4 _InnerFlame;
-			float _Width;
-			float _Height;
-			float _Size;
+			float _InnerWidth;
+			float _InnerLength;
+			float _OuterWidth;
+			float _OuterLength;
+			float _TotalLength;
 			
 			float2 remap_uv(float2 uv)
             {
 	            return float2((uv.x - 0.5) * 2, (uv.y - 0.5) * 2);
             }
 			
-			float outer_fire_gradient(float2 uv)
+			float outer_mask(float2 uv)
             {
                 float2 m_uv = remap_uv(uv);
-            	const float x = (1 - abs(m_uv.x)) * 4;
-            	const float y = 1 - uv.y / _Size;
+            	const float x = (1 - abs(m_uv.x)) * _OuterWidth;
+            	const float y = (1 - uv.y / _OuterLength) * _TotalLength;
             	return smoothstep(0, 1, x * y);
             }
-			float inner_fire_gradient(float2 uv)
+			float inner_mask(float2 uv)
             {
                 float2 m_uv = remap_uv(uv);
-            	const float x = (1 - abs(m_uv.x)) * _Width;
-            	const float y = 1 - uv.y / _Height;
+            	const float x = (1 - abs(m_uv.x)) * _InnerWidth;
+            	const float y = (1 - uv.y / (_InnerLength * 0.9)) * _TotalLength;
             	return smoothstep(0, 1, x * y);
             }
 			
@@ -79,13 +84,35 @@
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				const float2 uv = float2(i.uv.x, i.uv.y);
-				float outer_gradient = outer_fire_gradient(uv);
-				float inner_gradient = inner_fire_gradient(uv);
+				float2 uv = float2(i.uv.x, i.uv.y);
 				
-				fixed4 inner_flame = fixed4(_InnerFlame.xyz * inner_gradient, inner_gradient);
-				fixed4 outer_flame = fixed4(_OuterFlame.xyz * outer_gradient, outer_gradient);
-				return lerp(outer_flame, inner_flame, outer_gradient);
+				// 分别计算内外焰遮罩
+				float outer = outer_mask(uv);
+				float inner = inner_mask(uv);
+				
+				// 计算内外焰的过渡区域
+				float transition_area = smoothstep(0.0, 1, inner);
+				float inner_only_mask = saturate(inner - outer * 0.5);
+				float outer_only_mask = outer * (1.0 - transition_area * 0.7);
+				
+				// 计算颜色
+				fixed4 inner_color = fixed4(_InnerFlame.xyz, 1.0) * inner_only_mask;
+				fixed4 outer_color = fixed4(_OuterFlame.xyz, 1.0) * outer_only_mask;
+				
+				// 组合颜色（内焰在最上层）
+				fixed4 col = fixed4(0, 0, 0, 0);
+				
+				// 先绘制外焰
+				col.xyz = outer_color.xyz;
+				col.a = outer_color.a;
+				
+				// 再叠加内焰
+				col.xyz = col.xyz * (1.0 - inner_color.a) + inner_color.xyz * inner_color.a;
+				col.a = max(col.a, inner_color.a);
+				
+				// 确保不透明
+				col.a = col.a * 2;
+				return col;
 			}
 			ENDCG
 		}
