@@ -69,14 +69,22 @@ Material:
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _Height: 1
+    - _InnerLenght: 1
+    - _InnerLength: 1
+    - _InnerWidth: 2
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
+    - _Offset: 0.06
+    - _OuterLenght: 1
+    - _OuterLength: 1
+    - _OuterWidth: 4
     - _Parallax: 0.02
     - _Size: 1
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
+    - _TotalLength: 1
     - _UVSec: 0
     - _Width: 1.001
     - _ZWrite: 1

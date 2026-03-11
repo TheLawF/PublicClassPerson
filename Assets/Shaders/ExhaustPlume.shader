@@ -10,6 +10,7 @@
 		_OuterLength ("外焰长度", Range(0, 1)) = 1
 		
 		_TotalLength ("总长度", Range(0, 1)) = 1
+		_Offset ("位移", float) = 0
 	}
 	SubShader
 	{
@@ -30,6 +31,7 @@
 			
 			#include "UnityCG.cginc"
 			#include "FastNoiseLite.hlsl"
+			#include "ShaderUtils.hlsl"
 
 			struct appdata
 			{
@@ -53,10 +55,22 @@
 			float _OuterWidth;
 			float _OuterLength;
 			float _TotalLength;
+			float _Offset;
 			
 			float2 remap_uv(float2 uv)
             {
 	            return float2((uv.x - 0.5) * 2, (uv.y - 0.5) * 2);
+            }
+
+			float voronoi(float2 uv)
+            {
+                fnl_state noise = fnlCreateState();
+                noise.noise_type = FNL_NOISE_CELLULAR;
+	            noise.frequency = 1;
+                noise.cellular_jitter_mod = 1;
+                noise.cellular_return_type = FNL_CELLULAR_RETURN_TYPE_DISTANCE2SUB;
+                noise.cellular_distance_func = FNL_CELLULAR_DISTANCE_EUCLIDEAN;
+                return fnlGetNoise2D(noise, uv.x, uv.y);
             }
 			
 			float outer_mask(float2 uv)
@@ -85,10 +99,13 @@
 			fixed4 frag (v2f i) : SV_Target
 			{
 				float2 uv = float2(i.uv.x, i.uv.y);
+				const float2 cell1_uv = float2(i.uv.x * 4, i.uv.y / 8 + _Offset);
 				
 				// 分别计算内外焰遮罩
 				float outer = outer_mask(uv);
 				float inner = inner_mask(uv);
+				
+				float gray = voronoi(cell1_uv);
 				
 				// 计算内外焰的过渡区域
 				float transition_area = smoothstep(0.0, 1, inner);
@@ -98,6 +115,7 @@
 				// 计算颜色
 				fixed4 inner_color = fixed4(_InnerFlame.xyz, 1.0) * inner_only_mask;
 				fixed4 outer_color = fixed4(_OuterFlame.xyz, 1.0) * outer_only_mask;
+				fixed4 turbulence = fixed4(_OuterFlame.xyz, 1) * outer_only_mask * gray;
 				
 				// 组合颜色（内焰在最上层）
 				fixed4 col = fixed4(0, 0, 0, 0);
@@ -107,10 +125,9 @@
 				col.a = outer_color.a;
 				
 				// 再叠加内焰
-				col.xyz = col.xyz * (1.0 - inner_color.a) + inner_color.xyz * inner_color.a;
-				col.a = max(col.a, inner_color.a);
+				add_layer(col, inner_color, UTIL_LAYER_BLEND_MODE_ALPHA);
+				add_layer(col, turbulence, UTIL_LAYER_BLEND_MODE_ALPHA);
 				
-				// 确保不透明
 				col.a = col.a * 2;
 				return col;
 			}
