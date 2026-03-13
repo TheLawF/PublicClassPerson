@@ -1,4 +1,4 @@
-Shader "Custom/PlasmaBeam"
+Shader "Fictoshader/PlasmaBeam"
 {
     Properties
     {

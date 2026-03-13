@@ -28,6 +28,8 @@
 #define UTIL_LAYER_BLEND_MODE_GLOW 24
 typedef int layer_blend_mode;
 
+#define FICTOSHADER_MATH_PI 3.14159
+
 
 fixed blend_channel(fixed bottom, fixed top, layer_blend_mode mode)
 {
@@ -135,6 +137,22 @@ void add_layer(inout fixed4 bottom_layer, fixed4 new_layer, layer_blend_mode mod
     }
 }
 
+void color_posterize(inout fixed4 color, int steps)
+{
+    color.rgb = floor(color.rgb * steps) / (steps - 1);
+}
+
+float2 rotateUV(float2 uv, float rotation) {
+    float2 center = float2(0.5, 0.5);
+    uv -= center;
+    float s = sin(rotation);
+    float c = cos(rotation);
+    float2x2 rotMatrix = float2x2(c, -s, s, c);
+    uv = mul(rotMatrix, uv);
+    uv += center;
+    return uv;
+}
+
 float2 remapUV(float2 uv)
 {
     return (uv.r - 0.5) * 2;
@@ -155,4 +173,24 @@ float2 getVolumetricShadow(float3 worldPos, sampler2D shadowMapTexture, float sh
     float dis = abs(depth - shadow);								
     shadowValue += clamp(Remap(dis, shadowAttenuation,0.1,0,1),0,1)*(1-shadowValue);
     return shadowValue;
+}
+
+float ClampPeriod(float value, float min, float max)
+{
+    return value % max - min == 0 && value / max <= 1 ? value :
+        value - max * floor(value / max);
+}
+
+float SinePeriod(float time, float period, float min, float max) {
+    float amplitude = (max - min) / 2.0f;
+    float midpoint = (min + max) / 2.0f;
+    float phase = time / period * 2.0f * FICTOSHADER_MATH_PI;
+    float sineValue = sin(phase);
+    return midpoint + amplitude * sineValue;
+}
+        
+float TriangularPeriod(float time, float min, float max) {
+    float period = max - min;
+    float mod = time % (period * 2);
+    return mod <= period ? min + mod : max - (mod - period);
 }

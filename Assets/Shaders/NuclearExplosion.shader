@@ -1,4 +1,4 @@
-﻿Shader "Custom/NuclearExplosion" {
+﻿Shader "Fictoshader/NuclearExplosion" {
 	Properties {
 		_Color ("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
