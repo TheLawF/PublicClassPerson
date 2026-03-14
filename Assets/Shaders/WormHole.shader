@@ -23,12 +23,12 @@ Shader "Unlit/WormHole"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
+                float3 color : COLOR;
             };
 
             struct v2f
             {
                 float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
             };
 
