@@ -1,19 +1,17 @@
-﻿Shader "Fictoshader/Warp"
+﻿Shader "Unlit/Warp"
 {
 	Properties {
         _MainTex ("Texture", 2D) = "white" {}
-        _Focus ("焦点位置", Vector) = (0.5, 0.5, 0, 0)
-        _ApexAngle ("顶点角度", float) = 60.0
         _WarpStrength ("扭曲强度", Range(0, 1)) = 0.3
-        _Transition ("过渡平滑度", Range(0.1, 4)) = 0.5
-	    _Rotation("旋转角度", float) = 0
     }
     
     SubShader {
          Tags 
-        {
-            "RenderType" = "Opaque"
+        { 
+            "Queue" = "Transparent"
+            "RenderType" = "Transparent"
         }
+        Blend SrcAlpha OneMinusSrcAlpha
         LOD 100
         
         Pass {
@@ -21,7 +19,6 @@
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
-            #include "ShaderUtils.hlsl"
             
             struct appdata {
                 float4 vertex : POSITION;
@@ -35,8 +32,7 @@
             
             sampler2D _MainTex;
             float4 _MainTex_ST;
-            float4 _Focus;
-            float _ApexAngle, _WarpStrength, _Transition, _Rotation;
+            float _WarpStrength;
             
             v2f vert (appdata v) {
                 v2f o;
@@ -46,9 +42,11 @@
             }
             
             // 圆锥面变形函数
-            float2 coneDeform(float2 uv, float2 focus, float apexAngle, float warp, float transition) {
+            float2 coneDeform(float2 uv, float warp) {
                 // 转换为以焦点为中心的坐标
-                float2 d = uv - focus.xy;
+                float apexAngle = 72;
+                float transition = 0.1;
+                float2 d = uv - float2(0.5, 0.5);
                 float r = length(d);
                 
                 if (r < 0.0001) return uv;
@@ -81,22 +79,21 @@
                 float2 projectedUV = conePoint.xy / (1.0 - conePoint.z + 0.001);
                 
                 // 应用扭曲量控制
-                float2 result = focus.xy + projectedUV * abs(warp);
+                float2 result = float2(0.5, 0.5) + projectedUV * abs(warp);
                 
                 // 混合原始UV和变形UV
                 return lerp(uv, result, abs(warp));
             }
             
             fixed4 frag (v2f i) : SV_Target {
-                float2 rot = rotateUV(i.uv, _Rotation);
-                float2 warpedUV = coneDeform(rot, _Focus.xy, SinePeriod(_ApexAngle, 65, 10, 76), _WarpStrength, _Transition);
+                float2 warpedUV = coneDeform(i.uv, _WarpStrength);
                 
                 // 添加边缘过渡
                 float2 edgeDist = abs(warpedUV - 0.5) * 2.0;
-                float edgeFade = 1.0 - smoothstep(.8, 2., max(edgeDist.x, edgeDist.y));
+                float edgeFade = 1.0 - smoothstep(1, 1., max(edgeDist.x, edgeDist.y));
                 
                 fixed4 col = tex2D(_MainTex, warpedUV);
-                col.rgb *= edgeFade;
+                col.a = edgeFade;
                 
                 return col;
             }
